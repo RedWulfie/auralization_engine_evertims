@@ -1,0 +1,75 @@
+name: Build Linux
+
+on:
+  push:
+    branches: [ main, master, copilot/build-linux-only ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libfreetype6-dev \
+          libx11-dev \
+          libxext-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxcursor-dev \
+          libasound2-dev \
+          mesa-common-dev \
+          libglu1-mesa-dev \
+          libgtk-3-dev \
+          libwebkit2gtk-4.0-dev \
+          zlib1g-dev \
+          libresample1-dev \
+          libcunit1-dev
+
+    - name: Build libmysofa
+      run: |
+        cd libs/libmysofa
+        mkdir -p build
+        cd build
+        cmake ..
+        make
+        sudo make install
+        sudo ldconfig
+
+    - name: Install JUCE 5.3.2
+      run: |
+        wget -q https://github.com/juce-framework/JUCE/archive/refs/tags/5.3.2.tar.gz
+        sudo mkdir -p /opt
+        sudo tar -xzf 5.3.2.tar.gz -C /opt/
+        sudo mv /opt/JUCE-5.3.2 /opt/JUCE
+
+    - name: Build Projucer
+      run: |
+        cd /opt/JUCE/extras/Projucer/Builds/LinuxMakefile
+        make
+
+    - name: Generate Linux build files
+      run: |
+        /opt/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave EvertSE.jucer
+
+    - name: Build EvertSE
+      run: |
+        cd Builds/LinuxMakefile
+        make CONFIG=Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: EvertSE-linux
+        path: Builds/LinuxMakefile/build/EvertSE
