@@ -2,13 +2,18 @@ name: Build Linux
 
 on:
   push:
-    branches: [ main, master, copilot/build-linux-only ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+
+env:
+  JUCE_VERSION: "5.3.2"
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout
@@ -47,12 +52,12 @@ jobs:
         sudo make install
         sudo ldconfig
 
-    - name: Install JUCE 5.3.2
+    - name: Install JUCE ${{ env.JUCE_VERSION }}
       run: |
-        wget -q https://github.com/juce-framework/JUCE/archive/refs/tags/5.3.2.tar.gz
+        wget -q https://github.com/juce-framework/JUCE/archive/refs/tags/${{ env.JUCE_VERSION }}.tar.gz
         sudo mkdir -p /opt
-        sudo tar -xzf 5.3.2.tar.gz -C /opt/
-        sudo mv /opt/JUCE-5.3.2 /opt/JUCE
+        sudo tar -xzf ${{ env.JUCE_VERSION }}.tar.gz -C /opt/
+        sudo mv /opt/JUCE-${{ env.JUCE_VERSION }} /opt/JUCE
 
     - name: Build Projucer
       run: |
